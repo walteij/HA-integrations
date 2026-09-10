@@ -33,6 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> N
         entities.append(MlbLeagueSensor(entry.entry_id, runtime.coordinator, league, settings[CONF_SHOW_LOGOS]))
 
     for division in selected_divisions:
+        entities.append(MlbDivisionSummarySensor(entry.entry_id, runtime.coordinator, division))
         entities.append(MlbDivisionSensor(entry.entry_id, runtime.coordinator, division, settings[CONF_SHOW_LOGOS]))
         for team in division.team_records:
             entities.append(MlbTeamSensor(entry.entry_id, runtime.coordinator, team, settings[CONF_SHOW_LOGOS]))
@@ -174,6 +175,54 @@ class MlbDivisionSensor(MlbBaseSensor):
             name=self._division.division_name,
             manufacturer="MLB",
             model="Division standings",
+        )
+
+
+class MlbDivisionSummarySensor(MlbBaseSensor):
+    _attr_native_unit_of_measurement = None
+
+    def __init__(self, entry_id: str, coordinator, division: DivisionStanding) -> None:
+        super().__init__(entry_id, coordinator, show_logos=False)
+        self._division = division
+        self._attr_unique_id = f"{self._entry_id}_division_summary_{division.division_id}"
+        self._attr_name = f"{division.division_name} standings"
+
+    @property
+    def native_value(self):
+        return self._division.division_name
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "league": self._division.league_name,
+            "division": self._division.division_name,
+            "last_updated": self._division.last_updated,
+            "standings": [
+                {
+                    "rank": team.division_rank,
+                    "team": team.team_name,
+                    "record": team.record,
+                    "wins": team.wins,
+                    "losses": team.losses,
+                    "games_back": team.games_back,
+                    "winning_percentage": team.winning_percentage,
+                    "streak": f"{team.streak_code or ''}{team.streak_number or ''}".strip(),
+                    "runs_scored": team.runs_scored,
+                    "runs_allowed": team.runs_allowed,
+                    "run_differential": team.run_differential,
+                    "leader": team.division_leader,
+                }
+                for team in self._division.team_records
+            ],
+        }
+
+    @property
+    def device_info(self):
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"division_summary_{self._division.division_id}")},
+            name=self._division.division_name,
+            manufacturer="MLB",
+            model="Division standings summary",
         )
 
 

@@ -13,6 +13,7 @@ The active integration is [`custom_components/mlb_standings`](custom_components/
 It provides:
 
 - League leader sensors for the American League and National League
+- Division summary sensors with the full standings table for a selected division
 - Division leader sensors for all six MLB divisions
 - Team sensors for the selected league or division scope
 - An optional favorite team sensor
@@ -54,6 +55,30 @@ That keeps the repository HACS-friendly while still giving each integration its 
 2. Restart Home Assistant.
 3. Add the integration from Settings > Devices & services > Add integration.
 4. Adjust the options if you want to track just one league or one division.
+
+## Lovelace Card Example
+
+Use the division summary sensor in a Markdown card to show the full table for one selected division.
+
+```yaml
+type: markdown
+title: MLB Standings
+content: >
+	{% set s = states.sensor['sensor.al_east_standings'] %}
+	{% if s %}
+	### {{ s.attributes.division }}
+
+	| Team | W | L | GB | PCT |
+	| --- | ---: | ---: | ---: | ---: |
+	{% for row in s.attributes.standings %}
+	| {{ row.team }} | {{ row.wins }} | {{ row.losses }} | {{ row.games_back }} | {{ '%.3f' | format(row.winning_percentage) }} |
+	{% endfor %}
+	{% else %}
+	No standings available.
+	{% endif %}
+```
+
+Replace `sensor.al_east_standings` with the entity id for the division you selected in the integration options.
 
 ## Notes
 
