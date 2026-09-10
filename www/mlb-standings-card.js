@@ -58,6 +58,8 @@
   const getLeagueId = (leagueKey) => LEAGUES[leagueKey].id;
   const getDivisionId = (leagueKey, divisionKey) => DIVISIONS[leagueKey][divisionKey].id;
 
+  const getDivisionKeys = (leagueKey) => Object.keys(DIVISIONS[leagueKey] ?? {});
+
   const findSummaryEntity = (hass, leagueKey, mode, divisionKey) => {
     const leagueId = getLeagueId(leagueKey);
     const divisionId = getDivisionId(leagueKey, divisionKey);
@@ -89,6 +91,14 @@
       this._hass = null;
       this._data = null;
       this._error = null;
+      this.shadowRoot.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+
+        this._applyQuickAction(button.dataset.action, button.dataset.value);
+      });
     }
 
     static getStubConfig() {
@@ -185,6 +195,7 @@
       const divisionLabel = getDivisionLabel(leagueKey, divisionKey);
       const title = this._data?.title || this._config.title?.trim() || (mode === "postseason" ? `${leagueLabel} Postseason` : `${divisionLabel} Standings`);
       const subtitle = this._data?.subtitle || (mode === "postseason" ? `${leagueLabel} playoff bracket` : `${leagueLabel} division table`);
+      const divisionKeys = getDivisionKeys(leagueKey);
 
       if (this._error) {
         return `
@@ -195,6 +206,10 @@
                 <div class="eyebrow">MLB Standings</div>
                 <div class="title">${escapeHtml(title)}</div>
                 <div class="subtitle">${escapeHtml(subtitle)}</div>
+              </div>
+              <div class="actions">
+                ${this._renderLeagueButtons(leagueKey, mode)}
+                ${mode === "division" ? this._renderDivisionButtons(leagueKey, divisionKeys, divisionKey) : ""}
               </div>
             </div>
             <div class="empty">${escapeHtml(this._error)}</div>
@@ -212,6 +227,10 @@
                 <div class="title">${escapeHtml(title)}</div>
                 <div class="subtitle">${escapeHtml(subtitle)}</div>
               </div>
+              <div class="actions">
+                ${this._renderLeagueButtons(leagueKey, mode)}
+                ${mode === "division" ? this._renderDivisionButtons(leagueKey, divisionKeys, divisionKey) : ""}
+              </div>
             </div>
             <div class="empty">No standings available.</div>
           </div>
@@ -228,7 +247,12 @@
                 <div class="title">${escapeHtml(title)}</div>
                 <div class="subtitle">${escapeHtml(subtitle)}</div>
               </div>
-              <div class="badge">${this._data.bracket.length} teams</div>
+              <div class="header-right">
+                <div class="actions">
+                  ${this._renderLeagueButtons(leagueKey, mode)}
+                </div>
+                <div class="badge">${this._data.bracket.length} teams</div>
+              </div>
             </div>
             <div class="table-wrap">
               <table>
@@ -275,7 +299,13 @@
               <div class="title">${escapeHtml(title)}</div>
               <div class="subtitle">${escapeHtml(subtitle)}</div>
             </div>
-            <div class="badge">${this._data.rows.length} teams</div>
+            <div class="header-right">
+              <div class="actions">
+                ${this._renderLeagueButtons(leagueKey, mode)}
+                ${this._renderDivisionButtons(leagueKey, divisionKeys, divisionKey)}
+              </div>
+              <div class="badge">${this._data.rows.length} teams</div>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -311,6 +341,65 @@
           </div>
         </div>
       `;
+    }
+
+    _renderLeagueButtons(activeLeagueKey, mode) {
+      return Object.keys(LEAGUES)
+        .map(
+          (key) => `
+            <button
+              class="chip ${key === activeLeagueKey ? "chip-active" : ""}"
+              data-action="league"
+              data-value="${key}"
+              type="button"
+            >
+              ${escapeHtml(key)}
+            </button>
+          `,
+        )
+        .join("");
+    }
+
+    _renderDivisionButtons(leagueKey, divisionKeys, activeDivisionKey) {
+      return divisionKeys
+        .map(
+          (key) => `
+            <button
+              class="chip ${key === activeDivisionKey ? "chip-active" : ""}"
+              data-action="division"
+              data-value="${key}"
+              type="button"
+            >
+              ${escapeHtml(key)}
+            </button>
+          `,
+        )
+        .join("");
+    }
+
+    _applyQuickAction(action, value) {
+      if (action === "league") {
+        const nextLeague = leagueKeyFromValue(value);
+        const nextDivision = divisionKeyFromValue(nextLeague, this._config.division);
+        this._config = {
+          ...this._config,
+          league: nextLeague,
+          division: nextDivision,
+        };
+        this._syncData();
+        this._render();
+        return;
+      }
+
+      if (action === "division") {
+        const leagueKey = leagueKeyFromValue(this._config.league);
+        this._config = {
+          ...this._config,
+          division: divisionKeyFromValue(leagueKey, value),
+        };
+        this._syncData();
+        this._render();
+      }
     }
   }
 
@@ -376,6 +465,44 @@
       font-size: 0.78rem;
       font-weight: 700;
       white-space: nowrap;
+    }
+
+    .header-right {
+      display: grid;
+      justify-items: end;
+      gap: 8px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .chip {
+      appearance: none;
+      border: 1px solid var(--mlb-border);
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--mlb-muted);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, color 120ms ease, border-color 120ms ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+      border-color: var(--mlb-accent);
+      color: var(--mlb-accent);
+    }
+
+    .chip-active {
+      background: var(--mlb-chip);
+      border-color: var(--mlb-accent);
+      color: var(--mlb-accent);
     }
 
     .table-wrap {

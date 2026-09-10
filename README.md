@@ -107,6 +107,8 @@ Replace `sensor.american_league_postseason` with the AL or NL postseason entity 
 
 The repository now also includes a custom Lovelace card at [`www/mlb-standings-card.js`](www/mlb-standings-card.js).
 
+The card includes live buttons in the header so you can switch AL/NL and divisions directly on the dashboard.
+
 Add it to Home Assistant as a Lovelace resource with this URL:
 
 ```text
