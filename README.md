@@ -1,8 +1,8 @@
-# HA Integrations
+# MLB Standings
 
 This repository is structured as a Home Assistant integration collection.
 
-It is ready for HACS as a custom repository of type `Integration`, because each installable integration lives under `custom_components/<domain>`.
+The active HACS-facing integration is MLB Standings, and the repository is ready for HACS as a custom repository of type `Integration`, because each installable integration lives under `custom_components/<domain>`.
 
 ## Current Integrations
 
@@ -36,6 +36,7 @@ The repository is split into two layers:
 Current layout:
 
 - [`custom_components/mlb_standings`](custom_components/mlb_standings): installable Home Assistant integration
+- [`custom_components/mlb_standings/brand`](custom_components/mlb_standings/brand): local brand assets used by Home Assistant
 - [`integrations/mlb_standings`](integrations/mlb_standings): documentation and integration notes
 
 ## Add Another Integration Later
