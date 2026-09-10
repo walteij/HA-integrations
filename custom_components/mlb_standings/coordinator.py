@@ -210,7 +210,8 @@ class MlbStandingsCoordinator(DataUpdateCoordinator[MlbStandingsData]):
                 self._client.async_get_league(104),
             )
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with MLB API: {err}") from err
+            _LOGGER.warning("Error communicating with MLB API: %s", err)
+            return self.data or MlbStandingsData(leagues={})
 
         return MlbStandingsData(
             leagues={103: al_league, 104: nl_league},
