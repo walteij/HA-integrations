@@ -3,12 +3,6 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.helpers.selector import (
-    SelectOptionDict,
-    SelectSelector,
-    SelectSelectorConfig,
-    SelectSelectorMode,
-)
 
 from .const import (
     CONF_DIVISION_ID,
@@ -33,53 +27,17 @@ from .const import (
 def _data_schema(defaults: dict[str, object]) -> vol.Schema:
     return vol.Schema(
         {
-            vol.Required(
-                CONF_VIEW_MODE,
-                default=defaults[CONF_VIEW_MODE],
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        SelectOptionDict(label=VIEW_MODE_LABELS[view_mode], value=view_mode)
-                        for view_mode in VIEW_MODES
-                    ],
-                    mode=SelectSelectorMode.DROPDOWN,
-                )
+            vol.Required(CONF_VIEW_MODE, default=defaults[CONF_VIEW_MODE]): vol.In(
+                VIEW_MODES
             ),
-            vol.Required(
-                CONF_LEAGUE_ID,
-                default=defaults[CONF_LEAGUE_ID],
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        SelectOptionDict(label=league_name, value=league_id)
-                        for league_id, league_name in LEAGUE_OPTIONS
-                    ],
-                    mode=SelectSelectorMode.DROPDOWN,
-                )
+            vol.Required(CONF_LEAGUE_ID, default=defaults[CONF_LEAGUE_ID]): vol.In(
+                [league_id for league_id, _league_name in LEAGUE_OPTIONS]
             ),
-            vol.Required(
-                CONF_DIVISION_ID,
-                default=defaults[CONF_DIVISION_ID],
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        SelectOptionDict(label=division_name, value=division_id)
-                        for division_id, division_name in DIVISION_OPTIONS
-                    ],
-                    mode=SelectSelectorMode.DROPDOWN,
-                )
+            vol.Required(CONF_DIVISION_ID, default=defaults[CONF_DIVISION_ID]): vol.In(
+                [division_id for division_id, _division_name in DIVISION_OPTIONS]
             ),
-            vol.Optional(
-                CONF_FAVORITE_TEAM,
-                default=defaults[CONF_FAVORITE_TEAM],
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=[
-                        SelectOptionDict(label=team_name, value=team_name)
-                        for team_name in TEAM_NAMES
-                    ],
-                    mode=SelectSelectorMode.DROPDOWN,
-                )
+            vol.Optional(CONF_FAVORITE_TEAM, default=defaults[CONF_FAVORITE_TEAM]): vol.In(
+                TEAM_NAMES + ("",)
             ),
             vol.Required(CONF_SHOW_LOGOS, default=defaults[CONF_SHOW_LOGOS]): bool,
         }
