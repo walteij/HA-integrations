@@ -113,7 +113,7 @@ Home Assistant does not load `www/` files from a HACS integration automatically.
 
 Use one of these URLs:
 
-- If you copy the file into your Home Assistant `www` folder, use `/local/mlb-standings-card.js`
+- Preferred: copy the file into your Home Assistant `config/www/mlb-standings-card/` folder and use `/local/mlb-standings-card/mlb-standings-card.js`
 - If you want to load it directly from GitHub, use this raw URL:
 
 ```text
@@ -121,6 +121,8 @@ https://raw.githubusercontent.com/walteij/HA-integrations/main/www/mlb-standings
 ```
 
 In Home Assistant, add it as a **JavaScript Module** or plain JavaScript resource in Settings > Dashboards > Resources.
+
+If the card still shows as unknown, move to the local `/local/...` URL first. That removes any remote loading or CORS issues from the equation.
 
 After adding the resource, use this card type in your dashboard:
 
@@ -132,14 +134,51 @@ division: East
 title: AL East Standings
 ```
 
-For postseason brackets, switch the mode:
+For postseason brackets, use one of these configurations:
 
 ```yaml
+# AL-only postseason card
+type: custom:mlb-standings-card
+mode: postseason
+league: AL
+title: AL Postseason
+```
+
+```yaml
+# NL-only postseason card
 type: custom:mlb-standings-card
 mode: postseason
 league: NL
 title: NL Postseason
 ```
+
+```yaml
+# Combined postseason card (activates when both leagues are ready)
+type: custom:mlb-standings-card
+mode: postseason
+postseason_scope: combined
+title: MLB Postseason
+```
+
+Behavior summary:
+
+- If `league` is set in postseason mode, the card renders that league only.
+- If `postseason_scope: combined` is set, the card waits until AL and NL both have a full clinched field.
+- Combined view then shows AL bracket, NL bracket, and the World Series placeholder.
+
+## Can I Add The Lovelace Card Via HACS?
+
+Yes, but as a **Frontend (Plugin)** repository, not as the Integration repository entry.
+
+Important:
+
+- HACS Integration installs `custom_components`, but does not auto-register Lovelace JS resources.
+- For a true HACS frontend install flow, publish the card as a Plugin-style repo (usually a separate repository) and add it in HACS as type **Frontend**.
+- In this repository layout, the most reliable method remains `/local/mlb-standings-card/mlb-standings-card.js` as documented above.
+
+If Home Assistant still says the card is unknown after you add the resource, hard refresh the browser tab and re-open the dashboard edit dialog. The custom card is registered as `custom:mlb-standings-card`, so that exact `type:` must be used.
+
+If you are loading the file from GitHub, make sure the URL matches the current branch and file path exactly. If needed, remove the resource, add it again, and then refresh the page.
 
 ## Notes
 

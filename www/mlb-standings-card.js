@@ -83,11 +83,59 @@
     );
   };
 
+  const findPostseasonEntities = (hass) => {
+    const states = Object.values(hass?.states ?? {});
+
+    return Object.entries(LEAGUES)
+      .map(([leagueKey, league]) => {
+        const source = states.find(
+          (state) =>
+            state?.entity_id?.startsWith("sensor.") &&
+            state.attributes?.league_id === league.id &&
+            Array.isArray(state.attributes?.bracket),
+        );
+
+        if (!source) {
+          return null;
+        }
+
+        return {
+          leagueKey,
+          leagueLabel: league.label,
+          source,
+          bracket: Array.isArray(source.attributes?.bracket) ? source.attributes.bracket : [],
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const getPostseasonScope = (config) => {
+    const explicitScope = String(config?.postseason_scope || "").trim().toLowerCase();
+    if (explicitScope === "combined") {
+      return "combined";
+    }
+    if (explicitScope === "league") {
+      return "league";
+    }
+
+    const hasLeague = Object.prototype.hasOwnProperty.call(config || {}, "league");
+    return hasLeague ? "league" : "combined";
+  };
+
+  const isLeaguePostseasonReady = (leagueData) =>
+    Array.isArray(leagueData?.bracket) &&
+    leagueData.bracket.length >= 6 &&
+    leagueData.bracket.every((team) => team?.clinched === true);
+
+  const isCombinedPostseasonReady = (leagues) =>
+    Array.isArray(leagues) && leagues.length === 2 && leagues.every((leagueData) => isLeaguePostseasonReady(leagueData));
+
   class MlbStandingsCard extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
       this._config = { ...DEFAULT_CONFIG };
+      this._postseasonScope = "league";
       this._hass = null;
       this._data = null;
       this._error = null;
@@ -118,6 +166,7 @@
         ...config,
         type: "custom:mlb-standings-card",
       };
+      this._postseasonScope = getPostseasonScope(config);
       this._syncData();
       this._render();
     }
@@ -132,7 +181,7 @@
       if (!this._data) {
         return 4;
       }
-      const rows = this._config.mode === "postseason" ? this._data.bracket.length : this._data.rows.length;
+      const rows = this._config.mode === "postseason" ? (this._data.leagues?.length ?? 1) * 6 : this._data.rows.length;
       return Math.max(4, Math.min(10, rows + 3));
     }
 
@@ -154,13 +203,47 @@
 
       this._error = null;
       if (this._config.mode === "postseason") {
+        const leagues = findPostseasonEntities(this._hass);
+
+        if (this._postseasonScope === "league") {
+          if (!source) {
+            this._data = null;
+            this._error = `Could not find the MLB postseason sensor for ${getLeagueLabel(leagueKey)}.`;
+            return;
+          }
+
+          this._data = {
+            title: this._config.title?.trim() || `${getLeagueLabel(leagueKey)} Postseason`,
+            subtitle: `${getLeagueLabel(leagueKey)} playoff bracket`,
+            source,
+            leagueKey,
+            divisionKey,
+            leagues: leagues.filter((leagueData) => leagueData.leagueKey === leagueKey),
+            combinedReady: false,
+            postseasonScope: "league",
+          };
+          return;
+        }
+
+        if (!leagues.length) {
+          this._data = null;
+          this._error = "Could not find the MLB postseason sensors for AL and NL.";
+          return;
+        }
+
+        const combinedReady = isCombinedPostseasonReady(leagues);
+
         this._data = {
-          title: this._config.title?.trim() || `${getLeagueLabel(leagueKey)} Postseason`,
-          subtitle: `${getLeagueLabel(leagueKey)} playoff bracket`,
+          title: this._config.title?.trim() || "MLB Postseason",
+          subtitle: combinedReady
+            ? "AL and NL playoff bracket with World Series path"
+            : "Combined card unlocks when AL and NL postseason fields are finalized",
           source,
           leagueKey,
           divisionKey,
-          bracket: Array.isArray(source.attributes?.bracket) ? source.attributes.bracket : [],
+          leagues,
+          combinedReady,
+          postseasonScope: "combined",
         };
         return;
       }
@@ -238,6 +321,127 @@
       }
 
       if (mode === "postseason") {
+        const postseasonLeagues = this._data.leagues ?? [];
+        const isCombined = this._data.postseasonScope === "combined";
+
+        if (isCombined && !this._data.combinedReady) {
+          return `
+            <style>${CARD_STYLES}</style>
+            <div class="shell shell-postseason">
+              <div class="header">
+                <div>
+                  <div class="eyebrow">MLB Postseason</div>
+                  <div class="title">${escapeHtml(title)}</div>
+                  <div class="subtitle">${escapeHtml(subtitle)}</div>
+                </div>
+                <div class="badge">Waiting</div>
+              </div>
+              <div class="postseason-grid">
+                ${postseasonLeagues
+                  .map(
+                    (leagueData) => `
+                      <section class="postseason-league">
+                        <div class="postseason-league-header">
+                          <div>
+                            <div class="eyebrow">${escapeHtml(leagueData.leagueLabel)}</div>
+                            <div class="title">Postseason status</div>
+                            <div class="subtitle">${leagueData.bracket.filter((row) => row.clinched).length}/${leagueData.bracket.length} teams clinched</div>
+                          </div>
+                          <div class="badge">${isLeaguePostseasonReady(leagueData) ? "Ready" : "Pending"}</div>
+                        </div>
+                      </section>
+                    `,
+                  )
+                  .join("")}
+                <section class="postseason-world-series">
+                  <div class="empty">Combined postseason view becomes active automatically once both AL and NL have a full clinched playoff field.</div>
+                </section>
+              </div>
+            </div>
+          `;
+        }
+
+        if (!isCombined) {
+          const leagueData = postseasonLeagues[0] || { leagueLabel, bracket: [] };
+          return `
+            <style>${CARD_STYLES}</style>
+            <div class="shell shell-postseason">
+              <div class="header">
+                <div>
+                  <div class="eyebrow">${escapeHtml(leagueLabel)}</div>
+                  <div class="title">${escapeHtml(title)}</div>
+                  <div class="subtitle">${escapeHtml(subtitle)}</div>
+                </div>
+                <div class="header-right">
+                  <div class="actions">
+                    ${this._renderLeagueButtons(leagueKey, mode)}
+                  </div>
+                  <div class="badge">${leagueData.bracket.length} teams</div>
+                </div>
+              </div>
+              <div class="postseason-grid">
+                <section class="postseason-league">
+                  <div class="postseason-league-header">
+                    <div>
+                      <div class="eyebrow">${escapeHtml(leagueData.leagueLabel || leagueLabel)}</div>
+                      <div class="title">${escapeHtml(leagueData.leagueLabel || leagueLabel)} bracket</div>
+                      <div class="subtitle">Wild Card, Division Series, Championship Series</div>
+                    </div>
+                    <div class="badge">${leagueData.bracket.length} teams</div>
+                  </div>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Seed</th>
+                          <th>Team</th>
+                          <th>Division</th>
+                          <th>W</th>
+                          <th>L</th>
+                          <th>PCT</th>
+                          <th>Clinched</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${leagueData.bracket
+                          .map(
+                            (row) => `
+                              <tr class="${row.clinched ? "clinched" : ""}">
+                                <td><span class="seed">${escapeHtml(row.seed)}</span></td>
+                                <td class="team">${escapeHtml(row.team)}</td>
+                                <td>${escapeHtml(row.division)}</td>
+                                <td>${escapeHtml(row.wins)}</td>
+                                <td>${escapeHtml(row.losses)}</td>
+                                <td>${escapeHtml(formatPct(row.winning_percentage))}</td>
+                                <td>${row.clinched ? "Yes" : "No"}</td>
+                              </tr>
+                            `,
+                          )
+                          .join("")}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="round-board">
+                    ${this._renderPostseasonRoundCard("Wild Card", [
+                      this._formatSeedTeam(leagueData.bracket, 3),
+                      this._formatSeedTeam(leagueData.bracket, 6),
+                      this._formatSeedTeam(leagueData.bracket, 4),
+                      this._formatSeedTeam(leagueData.bracket, 5),
+                    ])}
+                    ${this._renderPostseasonRoundCard("Division Series", [
+                      this._formatSeedTeam(leagueData.bracket, 1),
+                      "Winner of Wild Card",
+                      this._formatSeedTeam(leagueData.bracket, 2),
+                      "Winner of Wild Card",
+                    ])}
+                    ${this._renderPostseasonRoundCard("Championship Series", ["Winner of Division Series", "Winner of Division Series"])}
+                  </div>
+                </section>
+              </div>
+            </div>
+          `;
+        }
+
         return `
           <style>${CARD_STYLES}</style>
           <div class="shell shell-postseason">
@@ -251,40 +455,85 @@
                 <div class="actions">
                   ${this._renderLeagueButtons(leagueKey, mode)}
                 </div>
-                <div class="badge">${this._data.bracket.length} teams</div>
+                <div class="badge">${postseasonLeagues.length * 6} teams</div>
               </div>
             </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Seed</th>
-                    <th>Team</th>
-                    <th>Division</th>
-                    <th>W</th>
-                    <th>L</th>
-                    <th>PCT</th>
-                    <th>Clinched</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${this._data.bracket
-                    .map(
-                      (row) => `
-                        <tr class="${row.clinched ? "clinched" : ""}">
-                          <td><span class="seed">${escapeHtml(row.seed)}</span></td>
-                          <td class="team">${escapeHtml(row.team)}</td>
-                          <td>${escapeHtml(row.division)}</td>
-                          <td>${escapeHtml(row.wins)}</td>
-                          <td>${escapeHtml(row.losses)}</td>
-                          <td>${escapeHtml(formatPct(row.winning_percentage))}</td>
-                          <td>${row.clinched ? "Yes" : "No"}</td>
-                        </tr>
-                      `,
-                    )
-                    .join("")}
-                </tbody>
-              </table>
+            <div class="postseason-grid">
+              ${postseasonLeagues
+                .map(
+                  (leagueData) => `
+                    <section class="postseason-league">
+                      <div class="postseason-league-header">
+                        <div>
+                          <div class="eyebrow">${escapeHtml(leagueData.leagueLabel)}</div>
+                          <div class="title">${escapeHtml(leagueData.leagueLabel)} bracket</div>
+                          <div class="subtitle">Wild Card, Division Series, Championship Series</div>
+                        </div>
+                        <div class="badge">${leagueData.bracket.length} teams</div>
+                      </div>
+                      <div class="table-wrap">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Seed</th>
+                              <th>Team</th>
+                              <th>Division</th>
+                              <th>W</th>
+                              <th>L</th>
+                              <th>PCT</th>
+                              <th>Clinched</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${leagueData.bracket
+                              .map(
+                                (row) => `
+                                  <tr class="${row.clinched ? "clinched" : ""}">
+                                    <td><span class="seed">${escapeHtml(row.seed)}</span></td>
+                                    <td class="team">${escapeHtml(row.team)}</td>
+                                    <td>${escapeHtml(row.division)}</td>
+                                    <td>${escapeHtml(row.wins)}</td>
+                                    <td>${escapeHtml(row.losses)}</td>
+                                    <td>${escapeHtml(formatPct(row.winning_percentage))}</td>
+                                    <td>${row.clinched ? "Yes" : "No"}</td>
+                                  </tr>
+                                `,
+                              )
+                              .join("")}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="round-board">
+                        ${this._renderPostseasonRoundCard("Wild Card", [
+                          this._formatSeedTeam(leagueData.bracket, 3),
+                          this._formatSeedTeam(leagueData.bracket, 6),
+                          this._formatSeedTeam(leagueData.bracket, 4),
+                          this._formatSeedTeam(leagueData.bracket, 5),
+                        ])}
+                        ${this._renderPostseasonRoundCard("Division Series", [
+                          this._formatSeedTeam(leagueData.bracket, 1),
+                          "Winner of Wild Card",
+                          this._formatSeedTeam(leagueData.bracket, 2),
+                          "Winner of Wild Card",
+                        ])}
+                        ${this._renderPostseasonRoundCard("Championship Series", ["Winner of Division Series", "Winner of Division Series"])}
+                      </div>
+                    </section>
+                  `,
+                )
+                .join("")}
+              <section class="postseason-world-series">
+                <div class="postseason-league-header">
+                  <div>
+                    <div class="eyebrow">World Series</div>
+                    <div class="title">AL champion vs NL champion</div>
+                    <div class="subtitle">Combined view is active because both league postseason fields are ready</div>
+                  </div>
+                </div>
+                <div class="round-board round-board-world-series">
+                  ${this._renderPostseasonRoundCard("World Series", ["AL champion", "NL champion"])}
+                </div>
+              </section>
             </div>
           </div>
         `;
@@ -358,6 +607,28 @@
           `,
         )
         .join("");
+    }
+
+    _formatSeedTeam(bracket, seed) {
+      const row = bracket.find((entry) => Number(entry.seed) === seed);
+      if (!row) {
+        return `Seed ${seed}`;
+      }
+
+      return `Seed ${seed}: ${row.team}`;
+    }
+
+    _renderPostseasonRoundCard(title, slots) {
+      const items = slots
+        .map((slot) => `<div class="round-slot">${escapeHtml(slot)}</div>`)
+        .join("");
+
+      return `
+        <div class="round-card">
+          <div class="round-title">${escapeHtml(title)}</div>
+          <div class="round-slots">${items}</div>
+        </div>
+      `;
     }
 
     _renderDivisionButtons(leagueKey, divisionKeys, activeDivisionKey) {
@@ -505,6 +776,71 @@
       color: var(--mlb-accent);
     }
 
+    .postseason-grid {
+      display: grid;
+      gap: 16px;
+      padding: 16px 0 18px;
+    }
+
+    .postseason-league,
+    .postseason-world-series {
+      display: grid;
+      gap: 14px;
+      padding: 0 18px;
+    }
+
+    .postseason-league-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .round-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .round-board-world-series {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .round-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--mlb-border);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--card-background-color, var(--ha-card-background, #fff)) 88%, transparent);
+    }
+
+    .round-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mlb-muted);
+    }
+
+    .round-slots {
+      display: grid;
+      gap: 8px;
+    }
+
+    .round-slot {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--mlb-chip);
+      color: var(--mlb-text);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .postseason-world-series {
+      padding-bottom: 6px;
+    }
+
     .table-wrap {
       overflow-x: auto;
       padding: 6px 0 2px;
@@ -567,6 +903,16 @@
     @media (max-width: 640px) {
       .header {
         padding: 16px 14px 12px;
+      }
+
+      .postseason-league,
+      .postseason-world-series {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .round-board {
+        grid-template-columns: 1fr;
       }
 
       thead th,
