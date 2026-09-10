@@ -103,6 +103,35 @@ content: >
 
 Replace `sensor.american_league_postseason` with the AL or NL postseason entity id you want to display.
 
+## Custom Lovelace Card
+
+The repository now also includes a custom Lovelace card at [`www/mlb-standings-card.js`](www/mlb-standings-card.js).
+
+Add it to Home Assistant as a Lovelace resource with this URL:
+
+```text
+https://raw.githubusercontent.com/walteij/HA-integrations/main/www/mlb-standings-card.js
+```
+
+After adding the resource, use this card type in your dashboard:
+
+```yaml
+type: custom:mlb-standings-card
+mode: division
+league: AL
+division: East
+title: AL East Standings
+```
+
+For postseason brackets, switch the mode:
+
+```yaml
+type: custom:mlb-standings-card
+mode: postseason
+league: NL
+title: NL Postseason
+```
+
 ## Notes
 
 - The integration polls the MLB Stats API directly.

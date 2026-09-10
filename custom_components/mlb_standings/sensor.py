@@ -150,6 +150,7 @@ class MlbPostseasonSummarySensor(MlbBaseSensor):
     @property
     def extra_state_attributes(self):
         return {
+            "league_id": self._league.league_id,
             "league": self._league.league_name,
             "postseason_team_count": len(self._league.postseason_teams),
             "bracket": [
@@ -240,7 +241,9 @@ class MlbDivisionSummarySensor(MlbBaseSensor):
     @property
     def extra_state_attributes(self):
         return {
+            "league_id": self._division.league_id,
             "league": self._division.league_name,
+            "division_id": self._division.division_id,
             "division": self._division.division_name,
             "last_updated": self._division.last_updated,
             "standings": [
