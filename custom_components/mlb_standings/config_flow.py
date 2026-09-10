@@ -89,6 +89,10 @@ def _data_schema(defaults: dict[str, object]) -> vol.Schema:
 class MlbStandingsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
+        return MlbStandingsOptionsFlow(config_entry)
+
     async def async_step_user(self, user_input: dict[str, object] | None = None):
         if user_input is not None:
             await self.async_set_unique_id(DOMAIN)
@@ -107,10 +111,6 @@ class MlbStandingsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
         )
-
-
-async def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-    return MlbStandingsOptionsFlow(config_entry)
 
 
 class MlbStandingsOptionsFlow(config_entries.OptionsFlow):
