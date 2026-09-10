@@ -109,11 +109,18 @@ The repository now also includes a custom Lovelace card at [`www/mlb-standings-c
 
 The card includes live buttons in the header so you can switch AL/NL and divisions directly on the dashboard.
 
-Add it to Home Assistant as a Lovelace resource with this URL:
+Home Assistant does not load `www/` files from a HACS integration automatically. You need to add the card script as a Lovelace resource.
+
+Use one of these URLs:
+
+- If you copy the file into your Home Assistant `www` folder, use `/local/mlb-standings-card.js`
+- If you want to load it directly from GitHub, use this raw URL:
 
 ```text
 https://raw.githubusercontent.com/walteij/HA-integrations/main/www/mlb-standings-card.js
 ```
+
+In Home Assistant, add it as a **JavaScript Module** or plain JavaScript resource in Settings > Dashboards > Resources.
 
 After adding the resource, use this card type in your dashboard:
 
