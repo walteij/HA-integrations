@@ -70,6 +70,20 @@ class LeagueStanding:
     def teams(self) -> tuple[TeamStanding, ...]:
         return tuple(team for division in self.divisions for team in division.team_records)
 
+    @property
+    def postseason_teams(self) -> tuple[TeamStanding, ...]:
+        teams = sorted(
+            self.teams,
+            key=lambda team: (
+                -(team.wins - team.losses),
+                -team.wins,
+                team.losses,
+                team.division_rank or 999,
+                team.team_name,
+            ),
+        )
+        return tuple(teams[:6])
+
 
 @dataclass(slots=True)
 class MlbStandingsData:

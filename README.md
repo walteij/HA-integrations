@@ -13,6 +13,7 @@ The active integration is [`custom_components/mlb_standings`](custom_components/
 It provides:
 
 - League leader sensors for the American League and National League
+- League postseason summary sensors with the current playoff bracket for AL and NL
 - Division summary sensors with the full standings table for a selected division
 - Division leader sensors for all six MLB divisions
 - Team sensors for the selected league or division scope
@@ -79,6 +80,28 @@ content: >
 ```
 
 Replace `sensor.al_east_standings` with the entity id for the division you selected in the integration options.
+
+Use the postseason summary sensor in a second Markdown card to show the current playoff bracket.
+
+```yaml
+type: markdown
+title: MLB Postseason
+content: >
+	{% set s = states.sensor['sensor.american_league_postseason'] %}
+	{% if s %}
+	### {{ s.attributes.league }}
+
+	| Seed | Team | Division | W | L | PCT | Clinched |
+	| --- | --- | --- | ---: | ---: | ---: | --- |
+	{% for row in s.attributes.bracket %}
+	| {{ row.seed }} | {{ row.team }} | {{ row.division }} | {{ row.wins }} | {{ row.losses }} | {{ '%.3f' | format(row.winning_percentage) }} | {{ 'Yes' if row.clinched else 'No' }} |
+	{% endfor %}
+	{% else %}
+	No postseason data available.
+	{% endif %}
+```
+
+Replace `sensor.american_league_postseason` with the AL or NL postseason entity id you want to display.
 
 ## Notes
 

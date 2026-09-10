@@ -30,6 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> N
     )
 
     for league in selected_leagues:
+        entities.append(MlbPostseasonSummarySensor(entry.entry_id, runtime.coordinator, league))
         entities.append(MlbLeagueSensor(entry.entry_id, runtime.coordinator, league, settings[CONF_SHOW_LOGOS]))
 
     for division in selected_divisions:
@@ -130,6 +131,51 @@ class MlbLeagueSensor(MlbBaseSensor):
             name=self._league.league_name,
             manufacturer="MLB",
             model="League standings",
+        )
+
+
+class MlbPostseasonSummarySensor(MlbBaseSensor):
+    _attr_native_unit_of_measurement = None
+
+    def __init__(self, entry_id: str, coordinator, league: LeagueStanding) -> None:
+        super().__init__(entry_id, coordinator, show_logos=False)
+        self._league = league
+        self._attr_unique_id = f"{self._entry_id}_postseason_{league.league_id}"
+        self._attr_name = f"{league.league_name} postseason"
+
+    @property
+    def native_value(self):
+        return self._league.league_name
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "league": self._league.league_name,
+            "postseason_team_count": len(self._league.postseason_teams),
+            "bracket": [
+                {
+                    "seed": index,
+                    "team": team.team_name,
+                    "division": team.division_name,
+                    "record": team.record,
+                    "wins": team.wins,
+                    "losses": team.losses,
+                    "winning_percentage": team.winning_percentage,
+                    "clinched": team.clinched,
+                    "division_leader": team.division_leader,
+                    "wild_card_rank": team.wild_card_rank,
+                }
+                for index, team in enumerate(self._league.postseason_teams, start=1)
+            ],
+        }
+
+    @property
+    def device_info(self):
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"postseason_{self._league.league_id}")},
+            name=f"{self._league.league_name} postseason",
+            manufacturer="MLB",
+            model="Postseason standings summary",
         )
 
 
