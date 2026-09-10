@@ -59,3 +59,4 @@ That keeps the repository HACS-friendly while still giving each integration its 
 
 - The integration polls the MLB Stats API directly.
 - The old add-on/dashboard files are no longer the primary implementation.
+- Local brand images in `custom_components/mlb_standings/brand` are supported by Home Assistant 2026.3 and newer; on 2026.1 the logo still needs to come from the Home Assistant brands repository.

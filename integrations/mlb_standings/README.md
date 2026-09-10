@@ -30,3 +30,4 @@ The MLB Standings integration is ready as a custom integration with:
 - config flow selectors
 - options flow support
 - sensor entities backed by a shared data coordinator
+- local brand images for newer Home Assistant versions; on 2026.1 the logo must still be provided through the Home Assistant brands repository
