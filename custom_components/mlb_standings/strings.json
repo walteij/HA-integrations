@@ -1,0 +1,36 @@
+{
+  "title": "MLB Standings",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up MLB standings",
+        "description": "Choose how you want the MLB standings sensors to be filtered.",
+        "data": {
+          "view_mode": "View mode",
+          "league_id": "League",
+          "division_id": "Division",
+          "favorite_team": "Favorite team",
+          "show_logos": "Show team logos"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update MLB standings settings",
+        "description": "Adjust league, division, and favorite team settings.",
+        "data": {
+          "view_mode": "View mode",
+          "league_id": "League",
+          "division_id": "Division",
+          "favorite_team": "Favorite team",
+          "show_logos": "Show team logos"
+        }
+      }
+    }
+  }
+}

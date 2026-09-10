@@ -1,0 +1,9 @@
+{
+  "domain": "mlb_standings",
+  "name": "MLB Standings",
+  "version": "1.1.0",
+  "config_flow": true,
+  "documentation": "https://developers.home-assistant.io/docs/creating_integration_index/",
+  "requirements": [],
+  "codeowners": []
+}
