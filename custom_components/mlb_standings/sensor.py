@@ -30,17 +30,17 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> N
     )
 
     for league in selected_leagues:
-        entities.append(MlbLeagueSensor(runtime.coordinator, league, settings[CONF_SHOW_LOGOS]))
+        entities.append(MlbLeagueSensor(entry.entry_id, runtime.coordinator, league, settings[CONF_SHOW_LOGOS]))
 
     for division in selected_divisions:
-        entities.append(MlbDivisionSensor(runtime.coordinator, division, settings[CONF_SHOW_LOGOS]))
+        entities.append(MlbDivisionSensor(entry.entry_id, runtime.coordinator, division, settings[CONF_SHOW_LOGOS]))
         for team in division.team_records:
-            entities.append(MlbTeamSensor(runtime.coordinator, team, settings[CONF_SHOW_LOGOS]))
+            entities.append(MlbTeamSensor(entry.entry_id, runtime.coordinator, team, settings[CONF_SHOW_LOGOS]))
 
     if settings[CONF_FAVORITE_TEAM]:
         favorite = data.team(settings[CONF_FAVORITE_TEAM])
         if favorite is not None:
-            entities.append(MlbFavoriteTeamSensor(runtime.coordinator, favorite, settings[CONF_SHOW_LOGOS]))
+            entities.append(MlbFavoriteTeamSensor(entry.entry_id, runtime.coordinator, favorite, settings[CONF_SHOW_LOGOS]))
 
     async_add_entities(entities)
 
@@ -72,8 +72,9 @@ class MlbBaseSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:baseball"
 
-    def __init__(self, coordinator, show_logos: bool) -> None:
+    def __init__(self, entry_id: str, coordinator, show_logos: bool) -> None:
         super().__init__(coordinator)
+        self._entry_id = entry_id
         self._show_logos = show_logos
 
     @property
@@ -90,11 +91,11 @@ class MlbLeagueSensor(MlbBaseSensor):
     _attr_suggested_display_precision = 3
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator, league: LeagueStanding, show_logos: bool) -> None:
-        super().__init__(coordinator, show_logos)
+    def __init__(self, entry_id: str, coordinator, league: LeagueStanding, show_logos: bool) -> None:
+        super().__init__(entry_id, coordinator, show_logos)
         self._league = league
-        self._attr_unique_id = f"league_{league.league_id}"
-        self._attr_name = f"{league.league_name} leader"
+        self._attr_unique_id = f"{self._entry_id}_league_{league.league_id}"
+        self._attr_name = f"{league.league_name} standings leader"
 
     @property
     def native_value(self):
@@ -134,11 +135,11 @@ class MlbLeagueSensor(MlbBaseSensor):
 class MlbDivisionSensor(MlbBaseSensor):
     _attr_native_unit_of_measurement = None
 
-    def __init__(self, coordinator, division: DivisionStanding, show_logos: bool) -> None:
-        super().__init__(coordinator, show_logos)
+    def __init__(self, entry_id: str, coordinator, division: DivisionStanding, show_logos: bool) -> None:
+        super().__init__(entry_id, coordinator, show_logos)
         self._division = division
-        self._attr_unique_id = f"division_{division.division_id}"
-        self._attr_name = f"{division.division_name} leader"
+        self._attr_unique_id = f"{self._entry_id}_division_{division.division_id}"
+        self._attr_name = f"{division.division_name} standings leader"
 
     @property
     def native_value(self):
@@ -181,11 +182,11 @@ class MlbTeamSensor(MlbBaseSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_suggested_display_precision = 3
 
-    def __init__(self, coordinator, team: TeamStanding, show_logos: bool) -> None:
-        super().__init__(coordinator, show_logos)
+    def __init__(self, entry_id: str, coordinator, team: TeamStanding, show_logos: bool) -> None:
+        super().__init__(entry_id, coordinator, show_logos)
         self._team = team
-        self._attr_unique_id = f"team_{team.team_id}"
-        self._attr_name = team.team_name
+        self._attr_unique_id = f"{self._entry_id}_team_{team.team_id}"
+        self._attr_name = f"{team.team_name} standings"
 
     @property
     def native_value(self):
@@ -226,7 +227,7 @@ class MlbTeamSensor(MlbBaseSensor):
 
 
 class MlbFavoriteTeamSensor(MlbTeamSensor):
-    def __init__(self, coordinator, team: TeamStanding, show_logos: bool) -> None:
-        super().__init__(coordinator, team, show_logos)
-        self._attr_unique_id = "favorite_team"
-        self._attr_name = "Favorite team"
+    def __init__(self, entry_id: str, coordinator, team: TeamStanding, show_logos: bool) -> None:
+        super().__init__(entry_id, coordinator, team, show_logos)
+        self._attr_unique_id = f"{self._entry_id}_favorite_team"
+        self._attr_name = f"Favorite team ({team.team_name})"

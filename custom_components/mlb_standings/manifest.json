@@ -3,7 +3,12 @@
   "name": "MLB Standings",
   "version": "1.1.0",
   "config_flow": true,
+  "single_config_entry": true,
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "quality_scale": "bronze",
   "documentation": "https://developers.home-assistant.io/docs/creating_integration_index/",
+  "issue_tracker": "https://github.com/walteij/HA-integrations/issues",
   "requirements": [],
-  "codeowners": []
+  "codeowners": ["@walteij"]
 }
