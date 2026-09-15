@@ -1,0 +1,101 @@
+{
+  "title": "ARR Media Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "ARR Media Manager",
+        "description": "Connect to your Sonarr, Radarr, or Lidarr instance.",
+        "data": {
+          "application": "Application type",
+          "instance_name": "Instance name",
+          "base_url": "Base URL",
+          "api_key": "API key",
+          "verify_ssl": "Verify SSL certificate",
+          "timeout": "Request timeout"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "The URL is invalid.",
+      "invalid_auth": "Authentication failed.",
+      "cannot_connect": "Could not connect to the ARR instance.",
+      "unexpected_response": "The server returned an unexpected response.",
+      "timeout": "The request timed out.",
+      "ssl_error": "SSL certificate validation failed.",
+      "wrong_application": "The selected application type does not match the connected instance."
+    },
+    "abort": {
+      "already_configured": "This ARR instance is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ARR Media Manager options",
+        "description": "Adjust runtime behavior for this ARR instance.",
+        "data": {
+          "update_interval": "Coordinator update interval",
+          "default_root_folder": "Default root folder",
+          "default_quality_profile": "Default quality profile",
+          "default_monitoring_mode": "Default monitoring mode",
+          "auto_start_search": "Automatically start search after adding media",
+          "create_monitoring_sensors": "Create monitoring sensors",
+          "create_command_buttons": "Create command buttons",
+          "max_lookup_results": "Maximum lookup results",
+          "include_poster_urls": "Include poster URLs as attributes",
+          "include_extended_queue": "Include extended queue attributes",
+          "disk_space_low_threshold": "Disk space low threshold (%)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "application_version": "Application version",
+      "queue_count": "Queue count",
+      "health_issue_count": "Health issues",
+      "free_disk_space": "Free disk space",
+      "total_disk_space": "Total disk space",
+      "disk_used_percent": "Disk used percentage"
+    },
+    "binary_sensor": {
+      "connected": "Connected",
+      "healthy": "Healthy",
+      "queue_active": "Queue active",
+      "disk_space_low": "Disk space low"
+    },
+    "button": {
+      "rss_sync": "RSS sync",
+      "refresh_library": "Refresh library",
+      "rescan_folders": "Rescan disk",
+      "refresh_root_folders": "Refresh root folders",
+      "refresh_quality_profiles": "Refresh quality profiles"
+    }
+  },
+  "services": {
+    "lookup": {
+      "name": "Lookup",
+      "description": "Search an ARR instance for media."
+    },
+    "add_media": {
+      "name": "Add media",
+      "description": "Add media to an ARR instance."
+    },
+    "search_and_add": {
+      "name": "Search and add",
+      "description": "Find an exact match safely and add it."
+    },
+    "trigger_search": {
+      "name": "Trigger search",
+      "description": "Start a search for monitored media."
+    },
+    "refresh": {
+      "name": "Refresh",
+      "description": "Trigger a library or queue refresh."
+    },
+    "delete_media": {
+      "name": "Delete media",
+      "description": "Delete media with explicit confirmation."
+    }
+  }
+}

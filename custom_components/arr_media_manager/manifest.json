@@ -1,0 +1,12 @@
+{
+  "domain": "arr_media_manager",
+  "name": "ARR Media Manager",
+  "version": "0.1.0",
+  "documentation": "https://github.com/walteij/HA-integrations/tree/main/custom_components/arr_media_manager",
+  "issue_tracker": "https://github.com/walteij/HA-integrations/issues",
+  "codeowners": ["@walteij"],
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "requirements": []
+}

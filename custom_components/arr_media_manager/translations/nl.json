@@ -1,0 +1,101 @@
+{
+  "title": "ARR Media Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "ARR Media Manager",
+        "description": "Maak verbinding met je Sonarr-, Radarr- of Lidarr-instantie.",
+        "data": {
+          "application": "Applicatietype",
+          "instance_name": "Instantienaam",
+          "base_url": "Basis-URL",
+          "api_key": "API-sleutel",
+          "verify_ssl": "SSL-certificaat controleren",
+          "timeout": "Verzoektime-out"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "De URL is ongeldig.",
+      "invalid_auth": "Authenticatie is mislukt.",
+      "cannot_connect": "Kon geen verbinding maken met de ARR-instantie.",
+      "unexpected_response": "De server gaf een onverwachte respons terug.",
+      "timeout": "Het verzoek is verlopen.",
+      "ssl_error": "Controle van het SSL-certificaat is mislukt.",
+      "wrong_application": "Het geselecteerde applicatietype komt niet overeen met de verbonden instantie."
+    },
+    "abort": {
+      "already_configured": "Deze ARR-instantie is al geconfigureerd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ARR Media Manager-opties",
+        "description": "Pas het runtimegedrag voor deze ARR-instantie aan.",
+        "data": {
+          "update_interval": "Update-interval van de coordinator",
+          "default_root_folder": "Standaard hoofdmap",
+          "default_quality_profile": "Standaard kwaliteitsprofiel",
+          "default_monitoring_mode": "Standaard monitoringmodus",
+          "auto_start_search": "Zoekopdracht automatisch starten na toevoegen",
+          "create_monitoring_sensors": "Monitoring-sensoren aanmaken",
+          "create_command_buttons": "Commandoknoppen aanmaken",
+          "max_lookup_results": "Maximum aantal zoekresultaten",
+          "include_poster_urls": "Poster-URL's als attributen opnemen",
+          "include_extended_queue": "Uitgebreide wachtrijattributen opnemen",
+          "disk_space_low_threshold": "Drempel voor weinig schijfruimte (%)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "application_version": "Applicatieversie",
+      "queue_count": "Wachtrij",
+      "health_issue_count": "Gezondheidsproblemen",
+      "free_disk_space": "Vrije schijfruimte",
+      "total_disk_space": "Totale schijfruimte",
+      "disk_used_percent": "Gebruikte schijfruimte"
+    },
+    "binary_sensor": {
+      "connected": "Verbonden",
+      "healthy": "Gezond",
+      "queue_active": "Wachtrij actief",
+      "disk_space_low": "Weinig schijfruimte"
+    },
+    "button": {
+      "rss_sync": "RSS-synchronisatie",
+      "refresh_library": "Bibliotheek vernieuwen",
+      "rescan_folders": "Schijf opnieuw scannen",
+      "refresh_root_folders": "Hoofdmap vernieuwen",
+      "refresh_quality_profiles": "Kwaliteitsprofielen vernieuwen"
+    }
+  },
+  "services": {
+    "lookup": {
+      "name": "Zoeken",
+      "description": "Zoek media in een ARR-instantie."
+    },
+    "add_media": {
+      "name": "Media toevoegen",
+      "description": "Voeg media toe aan een ARR-instantie."
+    },
+    "search_and_add": {
+      "name": "Zoeken en toevoegen",
+      "description": "Vind een exacte match veilig en voeg deze toe."
+    },
+    "trigger_search": {
+      "name": "Zoekopdracht starten",
+      "description": "Start een zoekopdracht voor gemonitorde media."
+    },
+    "refresh": {
+      "name": "Vernieuwen",
+      "description": "Start een bibliotheek- of wachtrijvernieuwing."
+    },
+    "delete_media": {
+      "name": "Media verwijderen",
+      "description": "Verwijder media met expliciete bevestiging."
+    }
+  }
+}

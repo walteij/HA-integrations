@@ -1,0 +1,134 @@
+lookup:
+  name: Lookup media
+  description: Search the configured ARR instance for matching media.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+    query:
+      required: true
+      selector:
+        text:
+    max_results:
+      selector:
+        number:
+          min: 1
+          max: 50
+          step: 1
+
+add_media:
+  name: Add media
+  description: Add media to the configured ARR instance.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+    lookup_id:
+      selector:
+        text:
+    root_folder:
+      selector:
+        text:
+    quality_profile:
+      selector:
+        text:
+    monitoring_mode:
+      selector:
+        text:
+    search_after_add:
+      selector:
+        boolean:
+
+search_and_add:
+  name: Search and add
+  description: Find the best exact match and add it safely.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+    query:
+      required: true
+      selector:
+        text:
+    year:
+      selector:
+        number:
+          min: 1900
+          max: 2100
+          step: 1
+    foreign_id:
+      selector:
+        text:
+    exact_match:
+      selector:
+        boolean:
+    root_folder:
+      selector:
+        text:
+    quality_profile:
+      selector:
+        text:
+    monitoring_mode:
+      selector:
+        text:
+    search_after_add:
+      selector:
+        boolean:
+
+trigger_search:
+  name: Trigger search
+  description: Start a search for already monitored media.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+    media_id:
+      required: true
+      selector:
+        number:
+    season_number:
+      selector:
+        number:
+    media_subtype:
+      selector:
+        text:
+
+refresh:
+  name: Refresh
+  description: Trigger a refresh or sync action.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+    action:
+      required: true
+      selector:
+        text:
+
+delete_media:
+  name: Delete media
+  description: Delete media with explicit confirmation.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+    media_id:
+      required: true
+      selector:
+        number:
+    delete_files:
+      selector:
+        boolean:
+    add_import_exclusion:
+      selector:
+        boolean:
+    confirm:
+      required: true
+      selector:
+        boolean:
