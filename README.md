@@ -164,6 +164,7 @@ Behavior summary:
 
 - If `league` is set in postseason mode, the card renders that league only.
 - If `postseason_scope: combined` is set, the card waits until AL and NL both have a full clinched field.
+- Playoff rounds show the scheduled matchups, series wins, and advancing team from the MLB postseason schedule.
 - Combined view then shows AL bracket, NL bracket, and the World Series placeholder.
 
 ## Can I Add The Lovelace Card Via HACS?

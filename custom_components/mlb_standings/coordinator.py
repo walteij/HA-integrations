@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 from typing import Any
 
@@ -9,7 +10,7 @@ from aiohttp import ClientError, ClientSession
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import API_BASE_URL, DEFAULT_UPDATE_INTERVAL, DIVISIONS, LEAGUES, TEAM_LOGO_URL
+from .const import API_BASE_URL, API_SCHEDULE_URL, DEFAULT_UPDATE_INTERVAL, DIVISIONS, LEAGUES, TEAM_LOGO_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,8 +87,22 @@ class LeagueStanding:
 
 
 @dataclass(slots=True)
+class PostseasonSeries:
+    league_id: int
+    game_type: str
+    away_team: str
+    home_team: str
+    away_wins: int
+    home_wins: int
+    games_played: int
+    state: str
+    winner: str | None
+
+
+@dataclass(slots=True)
 class MlbStandingsData:
     leagues: dict[int, LeagueStanding]
+    postseason_series: tuple[PostseasonSeries, ...] = ()
 
     @property
     def divisions(self) -> tuple[DivisionStanding, ...]:
@@ -156,6 +171,91 @@ class MlbApiClient:
             divisions=tuple(divisions),
         )
 
+    async def async_get_postseason_series(self) -> tuple[PostseasonSeries, ...]:
+        try:
+            async with self._session.get(
+                API_SCHEDULE_URL,
+                params={
+                    "sportId": 1,
+                    "season": datetime.now().year,
+                    "gameType": "F,D,L",
+                    "hydrate": "team",
+                },
+            ) as response:
+                response.raise_for_status()
+                payload = await response.json()
+        except ClientError as err:
+            _LOGGER.warning("Error retrieving MLB postseason schedule: %s", err)
+            return ()
+
+        grouped: dict[tuple[str, int, tuple[str, str]], dict[str, Any]] = {}
+        for date in payload.get("dates", []):
+            for game in date.get("games", []):
+                game_type = str(game.get("gameType", ""))
+                away = game.get("teams", {}).get("away", {})
+                home = game.get("teams", {}).get("home", {})
+                away_team = away.get("team", {})
+                home_team = home.get("team", {})
+                if not away_team or not home_team:
+                    continue
+
+                league_id = int(away_team.get("league", {}).get("id", 0))
+                if league_id not in LEAGUES:
+                    continue
+
+                away_name = str(away_team.get("teamName") or away_team.get("name", "Unknown team"))
+                home_name = str(home_team.get("teamName") or home_team.get("name", "Unknown team"))
+                away_key = str(away_team.get("id") or away_name)
+                home_key = str(home_team.get("id") or home_name)
+                pair = tuple(sorted((away_key, home_key)))
+                series = grouped.setdefault(
+                    (game_type, league_id, pair),
+                    {
+                        "away_team": away_name,
+                        "home_team": home_name,
+                        "away_wins": 0,
+                        "home_wins": 0,
+                        "games_played": 0,
+                        "live": False,
+                    },
+                )
+
+                status = game.get("status", {}).get("abstractGameState")
+                if status == "Final":
+                    series["games_played"] += 1
+                    if away.get("isWinner") is True:
+                        series["away_wins"] += 1
+                    elif home.get("isWinner") is True:
+                        series["home_wins"] += 1
+                elif status == "Live":
+                    series["live"] = True
+
+        series_list = []
+        for (game_type, league_id, _), series in grouped.items():
+            wins_needed = {"F": 2, "D": 3, "L": 4}.get(game_type, 99)
+            winner = None
+            if series["away_wins"] >= wins_needed:
+                winner = series["away_team"]
+            elif series["home_wins"] >= wins_needed:
+                winner = series["home_team"]
+
+            state = "Final" if winner else "In Progress" if series["live"] or series["games_played"] else "Scheduled"
+            series_list.append(
+                PostseasonSeries(
+                    league_id=league_id,
+                    game_type=game_type,
+                    away_team=series["away_team"],
+                    home_team=series["home_team"],
+                    away_wins=series["away_wins"],
+                    home_wins=series["home_wins"],
+                    games_played=series["games_played"],
+                    state=state,
+                    winner=winner,
+                )
+            )
+
+        return tuple(series_list)
+
     @staticmethod
     def _parse_team_record(
         record: dict[str, Any],
@@ -219,9 +319,10 @@ class MlbStandingsCoordinator(DataUpdateCoordinator[MlbStandingsData]):
 
     async def _async_update_data(self) -> MlbStandingsData:
         try:
-            al_league, nl_league = await asyncio.gather(
+            al_league, nl_league, postseason_series = await asyncio.gather(
                 self._client.async_get_league(103),
                 self._client.async_get_league(104),
+                self._client.async_get_postseason_series(),
             )
         except Exception as err:
             _LOGGER.warning("Error communicating with MLB API: %s", err)
@@ -229,4 +330,5 @@ class MlbStandingsCoordinator(DataUpdateCoordinator[MlbStandingsData]):
 
         return MlbStandingsData(
             leagues={103: al_league, 104: nl_league},
+            postseason_series=postseason_series,
         )

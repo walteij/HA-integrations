@@ -6,6 +6,7 @@ DOMAIN = "mlb_standings"
 NAME = "MLB Standings"
 
 API_BASE_URL = "https://statsapi.mlb.com/api/v1/standings"
+API_SCHEDULE_URL = "https://statsapi.mlb.com/api/v1/schedule"
 TEAM_LOGO_URL = "https://www.mlbstatic.com/team-logos/team-cap-on-light/{team_id}.svg"
 
 DEFAULT_VIEW_MODE = "all"

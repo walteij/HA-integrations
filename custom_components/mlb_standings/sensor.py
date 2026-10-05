@@ -168,6 +168,20 @@ class MlbPostseasonSummarySensor(MlbBaseSensor):
                 }
                 for index, team in enumerate(self._league.postseason_teams, start=1)
             ],
+            "series": [
+                {
+                    "round": series.game_type,
+                    "away_team": series.away_team,
+                    "home_team": series.home_team,
+                    "away_wins": series.away_wins,
+                    "home_wins": series.home_wins,
+                    "games_played": series.games_played,
+                    "state": series.state,
+                    "winner": series.winner,
+                }
+                for series in self.coordinator.data.postseason_series
+                if series.league_id == self._league.league_id
+            ],
         }
 
     @property

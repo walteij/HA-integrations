@@ -104,6 +104,7 @@
           leagueLabel: league.label,
           source,
           bracket: Array.isArray(source.attributes?.bracket) ? source.attributes.bracket : [],
+          series: Array.isArray(source.attributes?.series) ? source.attributes.series : [],
         };
       })
       .filter(Boolean);
@@ -422,19 +423,9 @@
                     </table>
                   </div>
                   <div class="round-board">
-                    ${this._renderPostseasonRoundCard("Wild Card", [
-                      this._formatSeedTeam(leagueData.bracket, 3),
-                      this._formatSeedTeam(leagueData.bracket, 6),
-                      this._formatSeedTeam(leagueData.bracket, 4),
-                      this._formatSeedTeam(leagueData.bracket, 5),
-                    ])}
-                    ${this._renderPostseasonRoundCard("Division Series", [
-                      this._formatSeedTeam(leagueData.bracket, 1),
-                      "Winner of Wild Card",
-                      this._formatSeedTeam(leagueData.bracket, 2),
-                      "Winner of Wild Card",
-                    ])}
-                    ${this._renderPostseasonRoundCard("Championship Series", ["Winner of Division Series", "Winner of Division Series"])}
+                    ${this._renderPostseasonSeriesCard("Wild Card", leagueData.series, "F")}
+                    ${this._renderPostseasonSeriesCard("Division Series", leagueData.series, "D")}
+                    ${this._renderPostseasonSeriesCard("Championship Series", leagueData.series, "L")}
                   </div>
                 </section>
               </div>
@@ -504,19 +495,9 @@
                         </table>
                       </div>
                       <div class="round-board">
-                        ${this._renderPostseasonRoundCard("Wild Card", [
-                          this._formatSeedTeam(leagueData.bracket, 3),
-                          this._formatSeedTeam(leagueData.bracket, 6),
-                          this._formatSeedTeam(leagueData.bracket, 4),
-                          this._formatSeedTeam(leagueData.bracket, 5),
-                        ])}
-                        ${this._renderPostseasonRoundCard("Division Series", [
-                          this._formatSeedTeam(leagueData.bracket, 1),
-                          "Winner of Wild Card",
-                          this._formatSeedTeam(leagueData.bracket, 2),
-                          "Winner of Wild Card",
-                        ])}
-                        ${this._renderPostseasonRoundCard("Championship Series", ["Winner of Division Series", "Winner of Division Series"])}
+                        ${this._renderPostseasonSeriesCard("Wild Card", leagueData.series, "F")}
+                        ${this._renderPostseasonSeriesCard("Division Series", leagueData.series, "D")}
+                        ${this._renderPostseasonSeriesCard("Championship Series", leagueData.series, "L")}
                       </div>
                     </section>
                   `,
@@ -609,19 +590,35 @@
         .join("");
     }
 
-    _formatSeedTeam(bracket, seed) {
-      const row = bracket.find((entry) => Number(entry.seed) === seed);
-      if (!row) {
-        return `Seed ${seed}`;
-      }
-
-      return `Seed ${seed}: ${row.team}`;
-    }
-
     _renderPostseasonRoundCard(title, slots) {
       const items = slots
         .map((slot) => `<div class="round-slot">${escapeHtml(slot)}</div>`)
         .join("");
+
+      return `
+        <div class="round-card">
+          <div class="round-title">${escapeHtml(title)}</div>
+          <div class="round-slots">${items}</div>
+        </div>
+      `;
+    }
+
+    _renderPostseasonSeriesCard(title, series, gameType) {
+      const roundSeries = series.filter((entry) => entry.round === gameType);
+      const items = roundSeries.length
+        ? roundSeries
+            .map((entry) => {
+              const status = entry.winner ? `${entry.winner} advances` : entry.state;
+              return `
+                <div class="round-slot series-slot">
+                  <div class="series-team"><span>${escapeHtml(entry.away_team)}</span><strong>${escapeHtml(entry.away_wins)}</strong></div>
+                  <div class="series-team"><span>${escapeHtml(entry.home_team)}</span><strong>${escapeHtml(entry.home_wins)}</strong></div>
+                  <div class="series-status">${escapeHtml(status)}</div>
+                </div>
+              `;
+            })
+            .join("")
+        : `<div class="round-slot">No scheduled series</div>`;
 
       return `
         <div class="round-card">
@@ -835,6 +832,19 @@
       color: var(--mlb-text);
       font-size: 0.9rem;
       font-weight: 700;
+    }
+
+    .series-team {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .series-status {
+      margin-top: 6px;
+      color: var(--mlb-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
     }
 
     .postseason-world-series {
