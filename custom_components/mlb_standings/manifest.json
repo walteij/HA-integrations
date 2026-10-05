@@ -1,7 +1,7 @@
 {
   "domain": "mlb_standings",
   "name": "MLB Standings",
-  "version": "1.0.0.2",
+  "version": "1.0.0.3",
   "config_flow": true,
   "single_config_entry": true,
   "integration_type": "hub",
