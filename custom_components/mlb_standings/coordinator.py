@@ -211,6 +211,8 @@ class MlbApiClient:
                 series = grouped.setdefault(
                     (game_type, league_id, pair),
                     {
+                        "away_key": away_key,
+                        "home_key": home_key,
                         "away_team": away_name,
                         "home_team": home_name,
                         "away_wins": 0,
@@ -224,8 +226,15 @@ class MlbApiClient:
                 if status == "Final":
                     series["games_played"] += 1
                     if away.get("isWinner") is True:
-                        series["away_wins"] += 1
+                        winning_team_key = away_key
                     elif home.get("isWinner") is True:
+                        winning_team_key = home_key
+                    else:
+                        winning_team_key = None
+
+                    if winning_team_key == series["away_key"]:
+                        series["away_wins"] += 1
+                    elif winning_team_key == series["home_key"]:
                         series["home_wins"] += 1
                 elif status == "Live":
                     series["live"] = True
