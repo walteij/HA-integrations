@@ -178,7 +178,7 @@ class MlbApiClient:
                 params={
                     "sportId": 1,
                     "season": datetime.now().year,
-                    "gameType": "F,D,L",
+                    "gameType": "F,D,L,W",
                     "hydrate": "team",
                 },
             ) as response:
@@ -203,13 +203,14 @@ class MlbApiClient:
                 if league_id not in LEAGUES:
                     continue
 
+                series_league_id = min(LEAGUES) if game_type == "W" else league_id
                 away_name = str(away_team.get("teamName") or away_team.get("name", "Unknown team"))
                 home_name = str(home_team.get("teamName") or home_team.get("name", "Unknown team"))
                 away_key = str(away_team.get("id") or away_name)
                 home_key = str(home_team.get("id") or home_name)
                 pair = tuple(sorted((away_key, home_key)))
                 series = grouped.setdefault(
-                    (game_type, league_id, pair),
+                    (game_type, series_league_id, pair),
                     {
                         "away_key": away_key,
                         "home_key": home_key,
@@ -240,8 +241,8 @@ class MlbApiClient:
                     series["live"] = True
 
         series_list = []
-        for (game_type, league_id, _), series in grouped.items():
-            wins_needed = {"F": 2, "D": 3, "L": 4}.get(game_type, 99)
+        for (game_type, series_league_id, _), series in grouped.items():
+            wins_needed = {"F": 2, "D": 3, "L": 4, "W": 4}.get(game_type, 99)
             winner = None
             if series["away_wins"] >= wins_needed:
                 winner = series["away_team"]
@@ -251,7 +252,7 @@ class MlbApiClient:
             state = "Final" if winner else "In Progress" if series["live"] or series["games_played"] else "Scheduled"
             series_list.append(
                 PostseasonSeries(
-                    league_id=league_id,
+                    league_id=series_league_id,
                     game_type=game_type,
                     away_team=series["away_team"],
                     home_team=series["home_team"],

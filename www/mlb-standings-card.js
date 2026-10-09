@@ -324,6 +324,7 @@
       if (mode === "postseason") {
         const postseasonLeagues = this._data.leagues ?? [];
         const isCombined = this._data.postseasonScope === "combined";
+        const worldSeries = postseasonLeagues.flatMap((leagueData) => leagueData.series).filter((entry) => entry.round === "W");
 
         if (isCombined && !this._data.combinedReady) {
           return `
@@ -507,12 +508,12 @@
                 <div class="postseason-league-header">
                   <div>
                     <div class="eyebrow">World Series</div>
-                    <div class="title">AL champion vs NL champion</div>
-                    <div class="subtitle">Combined view is active because both league postseason fields are ready</div>
+                    <div class="title">World Series matchup and series score</div>
+                    <div class="subtitle">${worldSeries.length ? "Best-of-seven series" : "Matchup will appear when it is scheduled"}</div>
                   </div>
                 </div>
                 <div class="round-board round-board-world-series">
-                  ${this._renderPostseasonRoundCard("World Series", ["AL champion", "NL champion"])}
+                  ${this._renderPostseasonSeriesCard("World Series", worldSeries, "W")}
                 </div>
               </section>
             </div>
